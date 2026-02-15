@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tab Organizer - Configuration</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+      color: #333;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 300;
+    }
+
+    .header p {
+      margin: 10px 0 0 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+
+    .content {
+      padding: 40px;
+    }
+
+    .section {
+      margin-bottom: 40px;
+      padding: 30px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .section h2 {
+      margin: 0 0 20px 0;
+      font-size: 20px;
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #555;
+      font-size: 14px;
+    }
+
+    input[type="text"], input[type="password"], select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="password"]:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    }
+
+    textarea {
+      height: 120px;
+      resize: vertical;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+    }
+
+    .model-input {
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 13px;
+    }
+
+    .help-text {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+      line-height: 1.4;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-weight: 500;
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+
+    .btn-secondary {
+      background-color: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background-color: #545b62;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+
+    .test-section {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+    }
+
+    .test-result {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .test-result.success {
+      background-color: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+
+    .test-result.error {
+      background-color: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #dee2e6;
+      margin-bottom: 30px;
+    }
+
+    .tab {
+      padding: 12px 24px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .tab:hover {
+      background-color: #f8f9fa;
+    }
+
+    .tab.active {
+      border-bottom-color: #007bff;
+      color: #007bff;
+      background-color: #f8f9ff;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .debug-section {
+      background: #1e1e1e;
+      color: #e6e6e6;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+
+    .debug-header {
+      background: #2d2d2d;
+      padding: 12px 20px;
+      border-radius: 6px 6px 0 0;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .debug-content {
+      padding: 20px;
+    }
+
+    .debug-textarea {
+      width: 100%;
+      height: 200px;
+      background: #1e1e1e;
+      color: #e6e6e6;
+      border: 1px solid #404040;
+      border-radius: 4px;
+      padding: 15px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 12px;
+      resize: vertical;
+      box-sizing: border-box;
+    }
+
+    .debug-textarea:focus {
+      outline: none;
+      border-color: #007bff;
+    }
+
+    .debug-buttons {
+      display: flex;
+      gap: 10px;
+      margin: 15px 0;
+    }
+
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #007bff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🗂️ Tab Organizer Configuration</h1>
+      <p>Configure your AI model and prompts for intelligent tab organization</p>
+    </div>
+
+    <div class="content">
+      <div class="tabs">
+        <div class="tab active" data-tab="config">Configuration</div>
+        <div class="tab" data-tab="debug">Debug & Testing</div>
+      </div>
+
+      <div id="config-tab" class="tab-content active">
+        <div class="section">
+          <h2>🤖 AI Model Configuration</h2>
+        
+          <div class="form-group">
+            <label for="provider">AI Provider:</label>
+            <select id="provider">
+              <option value="anthropic">Anthropic (Claude)</option>
+              <option value="openai">OpenAI (GPT)</option>
+              <option value="gemini">Google (Gemini)</option>
+            </select>
+            <div class="help-text">Choose your AI provider. Each provider has different models and pricing.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="model" id="modelLabel">Model ID:</label>
+            <input type="text" id="model" class="model-input" placeholder="claude-3-5-sonnet-20241022" value="claude-3-5-sonnet-20241022">
+            <div class="help-text" id="modelHelpText">Enter any valid Anthropic model ID. Examples: claude-3-5-sonnet-20241022, claude-3-5-haiku-20241022, claude-3-sonnet-20240229. For Claude Sonnet 4, use: claude-sonnet-4-20250514</div>
+          </div>
+
+          <div class="form-group">
+            <label for="apiToken" id="tokenLabel">Anthropic API Token:</label>
+            <input type="password" id="apiToken" placeholder="sk-ant-api03-...">
+            <div class="help-text" id="tokenHelpText">Your API token is stored securely in your browser and never shared. Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></div>
+          </div>
+      </div>
+
+      <div class="section">
+        <h2>📝 Prompt Configuration</h2>
+        
+        <div class="form-group">
+          <label for="promptText">System Prompt:</label>
+          <textarea id="promptText" placeholder="Enter your custom prompt template...">You are a helpful assistant that organizes browser tabs into logical groups. Please analyze the following tabs and group them by topic, purpose, or domain. Create meaningful group names that clearly describe the content.
+
+Focus on:
+- Grouping related content together
+- Creating clear, descriptive group names
+- Keeping groups reasonably sized (2-8 tabs per group)
+- Prioritizing user productivity and workflow</textarea>
+          <div class="help-text">
+            This prompt will be sent to the AI along with your tab information. The AI will receive the tab titles and URLs, then respond with organized groups.
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="maxTokens">Max Tokens:</label>
+          <input type="number" id="maxTokens" value="1024" min="100" max="4096" step="100">
+          <div class="help-text">Maximum number of tokens for the AI response. Higher values allow for more detailed responses but cost more.</div>
+        </div>
+      </div>
+
+      <div class="section test-section">
+        <h2>🧪 Test Configuration</h2>
+        <p>Test your API configuration to make sure everything is working correctly.</p>
+        
+        <div class="button-group">
+          <button type="button" class="btn btn-secondary" id="testBtn">Test API Connection</button>
+        </div>
+
+        <div class="loading" id="testLoading">
+          <div class="spinner"></div>
+          Testing connection...
+        </div>
+
+        <div id="testResult"></div>
+      </div>
+
+        <div class="button-group">
+          <button type="button" class="btn btn-primary" id="saveBtn">Save Configuration</button>
+          <button type="button" class="btn btn-secondary" id="resetBtn">Reset to Defaults</button>
+        </div>
+
+        <div id="status"></div>
+      </div>
+
+      <div id="debug-tab" class="tab-content">
+        <div class="section">
+          <h2>🔧 Debug & Quick Testing</h2>
+          <p>Test your configuration with live tab data and iterate on prompts quickly.</p>
+          
+          <div class="form-group">
+            <div class="button-group">
+              <button type="button" class="btn btn-primary btn-small" id="debugLoadTabsBtn">Load Current Tabs</button>
+              <button type="button" class="btn btn-secondary btn-small" id="debugUseSampleBtn">Use Sample Tabs</button>
+            </div>
+          </div>
+
+          <div class="debug-section">
+            <div class="debug-header">📋 Current Tabs Data</div>
+            <div class="debug-content">
+              <div id="debugTabsData" style="font-family: monospace; font-size: 12px; color: #ccc;">
+                Click "Load Current Tabs" or "Use Sample Tabs" to see tab data here...
+              </div>
+            </div>
+          </div>
+
+          <div class="debug-section">
+            <div class="debug-header">📝 Final Prompt (Editable)</div>
+            <div class="debug-content">
+              <textarea id="debugPrompt" class="debug-textarea" placeholder="The templated prompt will appear here..."></textarea>
+              <div class="debug-buttons">
+                <button type="button" class="btn btn-primary btn-small" id="debugGeneratePromptBtn">Generate Prompt</button>
+                <button type="button" class="btn btn-secondary btn-small" id="debugSendPromptBtn">Send to AI</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="debug-section">
+            <div class="debug-header">🤖 AI Response</div>
+            <div class="debug-content">
+              <textarea id="debugResponse" class="debug-textarea" placeholder="AI response will appear here..." readonly></textarea>
+              <div class="debug-buttons">
+                <button type="button" class="btn btn-secondary btn-small" id="debugApplyResponseBtn">Apply Grouping</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="loading" id="debugLoading">
+            <div class="spinner"></div>
+            Sending to AI...
+          </div>
+
+          <div id="debugStatus"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

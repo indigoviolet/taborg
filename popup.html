@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body {
+      width: 280px;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .header p {
+      margin: 0;
+      font-size: 14px;
+      color: #666;
+    }
+
+    .organize-btn {
+      width: 100%;
+      padding: 16px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: background-color 0.2s;
+    }
+
+    .organize-btn:hover {
+      background-color: #0056b3;
+    }
+
+    .organize-btn:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+
+    .settings-btn {
+      width: 100%;
+      padding: 12px;
+      background-color: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-bottom: 15px;
+      transition: background-color 0.2s;
+    }
+
+    .settings-btn:hover {
+      background-color: #545b62;
+    }
+
+    .status {
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .status.success {
+      background-color: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background-color: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .status.warning {
+      background-color: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeeba;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 15px;
+    }
+
+    .spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #007bff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .info-text {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .config-status {
+      font-size: 12px;
+      margin-bottom: 15px;
+      padding: 8px;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🗂️ Tab Organizer</h1>
+    <p>AI-powered tab organization</p>
+  </div>
+
+  <div id="configStatus" class="config-status"></div>
+
+  <button type="button" class="organize-btn" id="organizeBtn">
+    <div id="organizeText">Organize Tabs with AI</div>
+  </button>
+
+  <button type="button" class="settings-btn" id="settingsBtn">
+    ⚙️ Configuration & Debug
+  </button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    Organizing tabs...
+  </div>
+
+  <div id="status"></div>
+
+  <div class="info-text">
+    Configure your API settings and prompts in the options page
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

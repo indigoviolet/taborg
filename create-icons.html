@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Extension Icons</title>
+</head>
+<body>
+    <canvas id="canvas16" width="16" height="16"></canvas>
+    <canvas id="canvas48" width="48" height="48"></canvas>
+    <canvas id="canvas128" width="128" height="128"></canvas>
+
+    <script>
+        function createIcon(canvasId, size) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            
+            // Blue background
+            ctx.fillStyle = '#007bff';
+            ctx.fillRect(0, 0, size, size);
+            
+            // White folder icon
+            ctx.fillStyle = 'white';
+            const folderSize = Math.floor(size * 0.7);
+            const x = Math.floor((size - folderSize) / 2);
+            const y = Math.floor((size - folderSize) / 2);
+            
+            // Draw simple folder shape
+            ctx.fillRect(x, y + folderSize * 0.3, folderSize, folderSize * 0.7);
+            ctx.fillRect(x, y + folderSize * 0.2, folderSize * 0.5, folderSize * 0.2);
+            
+            return canvas.toDataURL();
+        }
+
+        // Create icons and download them
+        setTimeout(() => {
+            const link16 = document.createElement('a');
+            link16.download = 'icon16.png';
+            link16.href = createIcon('canvas16', 16);
+            link16.click();
+
+            const link48 = document.createElement('a');
+            link48.download = 'icon48.png';
+            link48.href = createIcon('canvas48', 48);
+            link48.click();
+
+            const link128 = document.createElement('a');
+            link128.download = 'icon128.png';
+            link128.href = createIcon('canvas128', 128);
+            link128.click();
+        }, 100);
+    </script>
+</body>
+</html>
