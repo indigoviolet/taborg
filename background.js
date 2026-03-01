@@ -184,9 +184,11 @@ async function sortByActivity(sortBy, direction) {
       return direction === 'asc' ? titles[0] : titles[titles.length - 1];
     };
   } else {
+    const ACTIVITY_BUCKET_MS = 300000; // 5-minute buckets for fuzzy sorting
     const activityKey = tab => {
       const data = tabData[tab.id];
-      return data ? (data.lastActivatedAt || data.createdAt || 0) : 0;
+      const ts = data ? (data.lastActivatedAt || data.createdAt || 0) : 0;
+      return Math.floor(ts / ACTIVITY_BUCKET_MS);
     };
     cmp = direction === 'asc'
       ? (a, b) => activityKey(a) - activityKey(b)
