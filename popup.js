@@ -36,10 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
   sortTitleBtn.addEventListener('click',    () => doSort('title'));
 
   async function doSort(sortBy) {
-    // Activity default: newest first (desc). Title default: A→Z (asc). Reverse flips each.
-    const direction = sortBy === 'title'
-      ? (reversed ? 'desc' : 'asc')
-      : (reversed ? 'asc'  : 'desc');
+    const direction = sortBy === 'title' ? 'asc' : 'desc';
     const btn = sortBy === 'activity' ? sortActivityBtn : sortTitleBtn;
     btn.disabled = true;
     showStatus('<span class="spinner"></span>Sorting…', 'info');
@@ -47,9 +44,7 @@ document.addEventListener('DOMContentLoaded', function () {
     try {
       const response = await chrome.runtime.sendMessage({ action: 'sortByActivity', sortBy, direction });
       if (response.success) {
-        const label = sortBy === 'activity'
-          ? (reversed ? 'least recent first' : 'most recent first')
-          : (reversed ? 'Z → A' : 'A → Z');
+        const label = sortBy === 'activity' ? 'most recent first' : 'A → Z';
         showStatus(`Sorted ${response.result.sorted} tabs — ${label}`, 'success');
       } else {
         showStatus(`Error: ${response.error}`, 'error');
