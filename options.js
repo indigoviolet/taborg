@@ -266,6 +266,13 @@ Respond with only a JSON object, no markdown or explanation:
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  // Listen for pendingPattern changes when the page is already open
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && changes.pendingPattern && changes.pendingPattern.newValue) {
+      checkPendingPattern();
+    }
+  });
+
   // === INIT ===
   loadPatterns();
   loadAiConfig();

@@ -156,6 +156,25 @@
     }
     .close-all-btn:hover { background: #fecaca; }
 
+    #patternInput {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1.5px solid #d1d5db;
+      border-radius: 6px;
+      font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+      font-size: 11px;
+      box-sizing: border-box;
+      margin-bottom: 6px;
+      transition: border-color 0.15s;
+      color: #374151;
+    }
+    #patternInput:focus {
+      outline: none;
+      border-color: #ec4899;
+      box-shadow: 0 0 0 2px rgba(236,72,153,0.12);
+    }
+    #patternInput::placeholder { color: #bcbcbc; font-family: 'Noto Sans', sans-serif; }
+
     .empty-msg { font-size: 11px; color: #9ca3af; text-align: center; padding: 6px 0; }
   </style>
 </head>
@@ -179,6 +198,8 @@
       <span class="btn-icon"><i class="fa-solid fa-hand-sparkles" style="color:#ec4899"></i></span><span class="btn-label">Declutter</span>
     </button>
   </div>
+
+  <input type="text" id="patternInput" placeholder="Type a pattern to preview…" spellcheck="false">
 
   <div class="status-msg" id="statusMsg"></div>
 

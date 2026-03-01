@@ -92,8 +92,24 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Single delegated click listener for individual close buttons (registered once)
+  flaggedItems.addEventListener('click', async e => {
+    const btn = e.target.closest('.close-tab-btn');
+    if (!btn) return;
+    const tabId = parseInt(btn.dataset.tabId);
+    btn.disabled = true;
+    try {
+      await chrome.runtime.sendMessage({ action: 'closeTabs', tabIds: [tabId] });
+      btn.closest('.flagged-item').remove();
+      updateCloseAllVisibility();
+    } catch {
+      btn.disabled = false;
+    }
+  });
+
   function renderFlaggedItems(flagged) {
     flaggedItems.innerHTML = '';
+    closeAllBtn.disabled = false;
     for (const item of flagged) {
       const el = document.createElement('div');
       el.className = 'flagged-item';
@@ -107,20 +123,6 @@ document.addEventListener('DOMContentLoaded', function () {
       `;
       flaggedItems.appendChild(el);
     }
-
-    flaggedItems.addEventListener('click', async e => {
-      const btn = e.target.closest('.close-tab-btn');
-      if (!btn) return;
-      const tabId = parseInt(btn.dataset.tabId);
-      btn.disabled = true;
-      try {
-        await chrome.runtime.sendMessage({ action: 'closeTabs', tabIds: [tabId] });
-        btn.closest('.flagged-item').remove();
-        updateCloseAllVisibility();
-      } catch {
-        btn.disabled = false;
-      }
-    });
   }
 
   closeAllBtn.addEventListener('click', async () => {
@@ -144,6 +146,39 @@ document.addEventListener('DOMContentLoaded', function () {
       closeAllBtn.style.display = 'none';
     }
   }
+
+  // === ON-THE-FLY PATTERN PREVIEW ===
+
+  const patternInput = document.getElementById('patternInput');
+  let patternDebounce = null;
+
+  patternInput.addEventListener('input', () => {
+    clearTimeout(patternDebounce);
+    const pattern = patternInput.value.trim();
+    if (!pattern) {
+      flaggedList.style.display = 'none';
+      flaggedItems.innerHTML = '';
+      closeAllBtn.style.display = 'none';
+      hideStatus();
+      return;
+    }
+    patternDebounce = setTimeout(async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({ action: 'matchPattern', pattern });
+        if (!response.success) return;
+        flaggedList.style.display = 'block';
+        if (response.flagged.length === 0) {
+          flaggedItems.innerHTML = '<div class="empty-msg">No tabs match this pattern</div>';
+          closeAllBtn.style.display = 'none';
+          hideStatus();
+        } else {
+          renderFlaggedItems(response.flagged);
+          closeAllBtn.style.display = 'block';
+          showStatus(`${response.flagged.length} tab${response.flagged.length > 1 ? 's' : ''} match`, 'info');
+        }
+      } catch { /* ignore */ }
+    }, 250);
+  });
 
   // === HELPERS ===
 

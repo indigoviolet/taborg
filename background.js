@@ -279,6 +279,32 @@ function matchesPattern(url, pattern) {
   }
 }
 
+const TRACKING_PARAMS = new Set([
+  'fbclid', 'gclid', 'dclid', 'msclkid',
+  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
+  'mc_cid', 'mc_eid',
+  'ref', '_ref', 'ref_', 'referer',
+  'yclid', 'twclid', 'ttclid', 'li_fat_id',
+  'igshid', 'si',
+  '_ga', '_gl', '_hsenc', '_hsmi', '_openstat',
+  'ns_mchannel', 'ns_source', 'ns_campaign', 'ns_linkname', 'ns_fee',
+]);
+
+function stripTrackingParams(url) {
+  try {
+    const parsed = new URL(url);
+    const params = parsed.searchParams;
+    const toDelete = [];
+    for (const key of params.keys()) {
+      if (TRACKING_PARAMS.has(key) || key.startsWith('utm_')) toDelete.push(key);
+    }
+    for (const key of toDelete) params.delete(key);
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
 const DEFAULT_PATTERNS = [
   { pattern: 'github.com/*/pull/*', label: 'GitHub PR (reopenable)' },
   { pattern: 'github.com/*/issues/*', label: 'GitHub Issue (reopenable)' },
@@ -296,15 +322,16 @@ async function getDispensable() {
 
   const flagged = [];
 
-  // Tier 1: Exact URL duplicates — keep the most recently active, flag the rest
+  // Tier 1: URL duplicates (ignoring tracking params) — keep the most recently active, flag the rest
   const urlToKeeper = new Map();
   for (const tab of tabs) {
     if (tab.pinned) continue;
     const url = tab.url;
     if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
-    const key = tabData[tab.id]?.lastActivatedAt || 0;
-    if (!urlToKeeper.has(url) || key > (tabData[urlToKeeper.get(url).id]?.lastActivatedAt || 0)) {
-      urlToKeeper.set(url, tab);
+    const canonical = stripTrackingParams(url);
+    const lastActive = tabData[tab.id]?.lastActivatedAt || 0;
+    if (!urlToKeeper.has(canonical) || lastActive > (tabData[urlToKeeper.get(canonical).id]?.lastActivatedAt || 0)) {
+      urlToKeeper.set(canonical, tab);
     }
   }
 
@@ -313,14 +340,16 @@ async function getDispensable() {
     if (tab.pinned) continue;
     const url = tab.url;
     if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
-    urlCounts.set(url, (urlCounts.get(url) || 0) + 1);
+    const canonical = stripTrackingParams(url);
+    urlCounts.set(canonical, (urlCounts.get(canonical) || 0) + 1);
   }
 
   for (const tab of tabs) {
     if (tab.pinned) continue;
     const url = tab.url;
     if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
-    if ((urlCounts.get(url) || 0) > 1 && urlToKeeper.get(url)?.id !== tab.id) {
+    const canonical = stripTrackingParams(url);
+    if ((urlCounts.get(canonical) || 0) > 1 && urlToKeeper.get(canonical)?.id !== tab.id) {
       flagged.push({ tabId: tab.id, title: tab.title || url, url, domain: getDomain(url), reason: 'Duplicate tab' });
     }
   }
@@ -411,6 +440,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     getDispensable()
       .then(flagged => sendResponse({ success: true, flagged }))
       .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  } else if (request.action === 'matchPattern') {
+    (async () => {
+      try {
+        const currentWindow = await chrome.windows.getCurrent();
+        const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
+        const matched = [];
+        for (const tab of tabs) {
+          if (tab.pinned) continue;
+          const url = tab.url;
+          if (!url || url.startsWith('chrome://') || url.startsWith('chrome-extension://')) continue;
+          const wrappedPattern = '*' + request.pattern + '*';
+          const titleRegex = new RegExp(globToRegex(wrappedPattern).source, 'i');
+          const titleMatch = tab.title && titleRegex.test(tab.title);
+          if (matchesPattern(url, request.pattern) || titleMatch) {
+            matched.push({ tabId: tab.id, title: tab.title || url, url, domain: getDomain(url), reason: request.pattern });
+          }
+        }
+        sendResponse({ success: true, flagged: matched });
+      } catch (error) {
+        sendResponse({ success: false, error: error.message });
+      }
+    })();
     return true;
   } else if (request.action === 'closeTabs') {
     chrome.tabs.remove(request.tabIds)
