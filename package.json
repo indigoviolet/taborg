@@ -1,0 +1,25 @@
+{
+  "name": "taborg",
+  "version": "1.0.0",
+  "description": "An AI-powered Chrome extension that automatically organizes your browser tabs into logical groups using Claude AI.",
+  "main": "background.js",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/indigoviolet/taborg.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/indigoviolet/taborg/issues"
+  },
+  "homepage": "https://github.com/indigoviolet/taborg#readme",
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}

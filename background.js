@@ -1,4 +1,5 @@
 // Background service worker for Tab Organizer extension
+importScripts('lib.js');
 
 chrome.runtime.onInstalled.addListener(() => {
   initTabData();
@@ -33,15 +34,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 // === TAB ACTIVITY TRACKING ===
-
-function getDomain(url) {
-  if (!url) return '';
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return '';
-  }
-}
 
 async function getTabData() {
   const result = await chrome.storage.local.get('tabData');
@@ -259,51 +251,59 @@ async function sortByActivity(sortBy, direction) {
   return { sorted: nonPinnedOrder.length };
 }
 
-// === DECLUTTER / DISPENSABLE TAB DETECTION ===
+// === SORT BY TOPIC (AI) ===
 
-function globToRegex(pattern) {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  const regexStr = escaped.replace(/\*/g, '[^?#]*');
-  return new RegExp('^' + regexStr + '($|[?#/])');
-}
+async function sortByTopic() {
+  const { aiApiKey, aiModel } = await chrome.storage.local.get(['aiApiKey', 'aiModel']);
+  if (!aiApiKey) throw new Error('Configure your API key in Settings → AI');
 
-function matchesPattern(url, pattern) {
-  try {
-    const parsed = new URL(url);
-    const target = /^https?:\/\//i.test(pattern)
-      ? url
-      : parsed.hostname + parsed.pathname;
-    return globToRegex(pattern).test(target);
-  } catch {
-    return false;
-  }
-}
+  const currentWindow = await chrome.windows.getCurrent();
+  const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
+  const pinnedTabs = tabs.filter(t => t.pinned);
+  const unpinned = tabs.filter(t => !t.pinned);
 
-const TRACKING_PARAMS = new Set([
-  'fbclid', 'gclid', 'dclid', 'msclkid',
-  'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'utm_id',
-  'mc_cid', 'mc_eid',
-  'ref', '_ref', 'ref_', 'referer',
-  'yclid', 'twclid', 'ttclid', 'li_fat_id',
-  'igshid', 'si',
-  '_ga', '_gl', '_hsenc', '_hsmi', '_openstat',
-  'ns_mchannel', 'ns_source', 'ns_campaign', 'ns_linkname', 'ns_fee',
-]);
+  if (unpinned.length === 0) return { sorted: 0 };
 
-function stripTrackingParams(url) {
-  try {
-    const parsed = new URL(url);
-    const params = parsed.searchParams;
-    const toDelete = [];
-    for (const key of params.keys()) {
-      if (TRACKING_PARAMS.has(key) || key.startsWith('utm_')) toDelete.push(key);
+  const tabList = unpinned.map((t, i) => ({ i, url: t.url || '', title: t.title || '' }));
+
+  const prompt = `You are a tab organizer. Given these browser tabs, assign each a hierarchical topic sort key (e.g. "development/web/react", "communication/email"). When sorted alphabetically by these keys, tabs on similar topics should cluster together. Use broad categories first, then narrower ones.
+
+Tabs:
+${tabList.map(t => `${t.i}: ${t.title} — ${t.url}`).join('\n')}
+
+Return ONLY a JSON object mapping tab index to sort key, no markdown or explanation:
+{"0": "category/subcategory", "1": "category/subcategory", ...}`;
+
+  const model = aiModel || 'claude-haiku-4-5-20251001';
+  const result = await suggestPattern(aiApiKey, model, prompt, 4096);
+
+  // result is the parsed JSON object: { "0": "key", "1": "key", ... }
+  const sortKeys = result;
+
+  // Sort unpinned tabs by their topic keys
+  const sorted = [...unpinned];
+  sorted.sort((a, b) => {
+    const idxA = unpinned.indexOf(a);
+    const idxB = unpinned.indexOf(b);
+    const keyA = (sortKeys[String(idxA)] || '').toLowerCase();
+    const keyB = (sortKeys[String(idxB)] || '').toLowerCase();
+    return keyA.localeCompare(keyB);
+  });
+
+  // Move tabs into position
+  const startIndex = pinnedTabs.length;
+  for (let i = 0; i < sorted.length; i++) {
+    try {
+      await chrome.tabs.move(sorted[i].id, { index: startIndex + i });
+    } catch (err) {
+      console.warn(`Could not move tab ${sorted[i].id}:`, err.message);
     }
-    for (const key of toDelete) params.delete(key);
-    return parsed.toString();
-  } catch {
-    return url;
   }
+
+  return { sorted: sorted.length };
 }
+
+// === DECLUTTER / DISPENSABLE TAB DETECTION ===
 
 const DEFAULT_PATTERNS = [
   { pattern: 'github.com/*/pull/*', label: 'GitHub PR (reopenable)' },
@@ -392,7 +392,7 @@ async function reverseTabs() {
 
 // === AI SUGGESTION ===
 
-async function suggestPattern(apiKey, model, prompt) {
+async function suggestPattern(apiKey, model, prompt, maxTokens) {
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -403,7 +403,7 @@ async function suggestPattern(apiKey, model, prompt) {
     },
     body: JSON.stringify({
       model,
-      max_tokens: 256,
+      max_tokens: maxTokens || 256,
       messages: [{ role: 'user', content: prompt }]
     })
   });
@@ -413,7 +413,7 @@ async function suggestPattern(apiKey, model, prompt) {
   }
   const data = await response.json();
   const text = data.content[0].text;
-  const match = text.match(/\{[\s\S]*?\}/);
+  const match = text.match(/\{[\s\S]*\}/);
   if (!match) throw new Error('No JSON found in response');
   return JSON.parse(match[0]);
 }
@@ -433,6 +433,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   } else if (request.action === 'sortByActivity') {
     sortByActivity(request.sortBy, request.direction)
+      .then(result => sendResponse({ success: true, result }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  } else if (request.action === 'sortByTopic') {
+    sortByTopic()
       .then(result => sendResponse({ success: true, result }))
       .catch(error => sendResponse({ success: false, error: error.message }));
     return true;

@@ -61,6 +61,27 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // === SORT BY TOPIC ===
+
+  const sortTopicBtn = document.getElementById('sortTopicBtn');
+
+  sortTopicBtn.addEventListener('click', async () => {
+    sortTopicBtn.disabled = true;
+    showStatus('<span class="spinner"></span>Asking AI to group by topic…', 'info');
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'sortByTopic' });
+      if (response.success) {
+        showStatus(`Grouped ${response.result.sorted} tabs by topic`, 'success');
+      } else {
+        showStatus(`Error: ${response.error}`, 'error');
+      }
+    } catch {
+      showStatus('Failed to sort by topic', 'error');
+    } finally {
+      sortTopicBtn.disabled = false;
+    }
+  });
+
   // === DECLUTTER ===
 
   declutterBtn.addEventListener('click', async () => {

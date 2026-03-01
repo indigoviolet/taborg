@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // === AI SUGGEST ===
 
-  suggestBtn.addEventListener('click', async () => {
+  async function doSuggest() {
     const { aiApiKey, aiModel, aiPromptTemplate } = await chrome.storage.local.get(['aiApiKey', 'aiModel', 'aiPromptTemplate']);
 
     if (!aiApiKey) {
@@ -170,7 +170,9 @@ document.addEventListener('DOMContentLoaded', function () {
       suggestBtn.disabled    = false;
       suggestBtn.textContent = 'Suggest with AI';
     }
-  });
+  }
+
+  suggestBtn.addEventListener('click', doSuggest);
 
   function buildPrompt(template, url, title) {
     return template.replace(/\{url\}/g, url).replace(/\{title\}/g, title);
@@ -190,7 +192,13 @@ document.addEventListener('DOMContentLoaded', function () {
     suggestNote.textContent = su ? `Source: ${su}` : '';
 
     newPatternInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    newLabelInput.focus();
+
+    const { aiApiKey } = await chrome.storage.local.get('aiApiKey');
+    if (aiApiKey) {
+      doSuggest();
+    } else {
+      newLabelInput.focus();
+    }
   }
 
   // Update suggest button note based on API key presence
