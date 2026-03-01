@@ -270,7 +270,10 @@ function globToRegex(pattern) {
 function matchesPattern(url, pattern) {
   try {
     const parsed = new URL(url);
-    return globToRegex(pattern).test(parsed.hostname + parsed.pathname);
+    const target = /^https?:\/\//i.test(pattern)
+      ? url
+      : parsed.hostname + parsed.pathname;
+    return globToRegex(pattern).test(target);
   } catch {
     return false;
   }
@@ -340,6 +343,24 @@ async function getDispensable() {
   return flagged;
 }
 
+// === REVERSE TAB ORDER ===
+
+async function reverseTabs() {
+  const currentWindow = await chrome.windows.getCurrent();
+  const tabs = await chrome.tabs.query({ windowId: currentWindow.id });
+  const pinned = tabs.filter(t => t.pinned);
+  const rest = tabs.filter(t => !t.pinned).reverse();
+  const startIndex = pinned.length;
+  for (let i = 0; i < rest.length; i++) {
+    try {
+      await chrome.tabs.move(rest[i].id, { index: startIndex + i });
+    } catch (err) {
+      console.warn(`Could not move tab ${rest[i].id}:`, err.message);
+    }
+  }
+  return { reversed: rest.length };
+}
+
 // === AI SUGGESTION ===
 
 async function suggestPattern(apiKey, model, prompt) {
@@ -348,7 +369,8 @@ async function suggestPattern(apiKey, model, prompt) {
     headers: {
       'Content-Type': 'application/json',
       'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01'
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
     },
     body: JSON.stringify({
       model,
@@ -370,7 +392,12 @@ async function suggestPattern(apiKey, model, prompt) {
 // === MESSAGE HANDLER ===
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === 'suggestPattern') {
+  if (request.action === 'reverseTabs') {
+    reverseTabs()
+      .then(result => sendResponse({ success: true, result }))
+      .catch(error => sendResponse({ success: false, error: error.message }));
+    return true;
+  } else if (request.action === 'suggestPattern') {
     suggestPattern(request.apiKey, request.model, request.prompt)
       .then(result => sendResponse({ success: true, result }))
       .catch(error => sendResponse({ success: false, error: error.message }));

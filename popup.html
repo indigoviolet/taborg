@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" rel="stylesheet">
   <style>
     * { box-sizing: border-box; }
 
@@ -58,17 +59,13 @@
       cursor: not-allowed;
     }
 
-    .action-btn.active {
-      background: #eff6ff;
-      border-color: #2563eb;
-    }
-
-    .action-btn.active .btn-label { color: #1d4ed8; }
 
     .btn-icon {
       font-size: 22px;
       line-height: 1;
       flex-shrink: 0;
+      width: 28px;
+      text-align: center;
     }
 
     .btn-label {
@@ -78,18 +75,7 @@
       color: #374151;
     }
 
-    .options-btn {
-      background: none;
-      border: 1.5px solid #d1d5db;
-      border-radius: 6px;
-      color: #6b7280;
-      font-size: 15px;
-      padding: 4px 8px;
-      cursor: pointer;
-      line-height: 1;
-      transition: all 0.12s;
-    }
-    .options-btn:hover { background: #f3f4f6; border-color: #9ca3af; }
+    #optionsBtn:hover { color: #374151; }
 
     .status-msg {
       font-family: 'Noto Sans', sans-serif;
@@ -176,21 +162,21 @@
 <body>
   <div class="header">
     <h1>Tab Organizer</h1>
-    <button class="options-btn" id="optionsBtn" title="Options">⚙</button>
+    <i class="fa-solid fa-gear" id="optionsBtn" title="Options" style="color:#9ca3af;cursor:pointer;font-size:15px"></i>
   </div>
 
   <div class="action-grid">
     <button class="action-btn" id="sortActivityBtn">
-      <span class="btn-icon">⏱️</span><span class="btn-label">Sort by Activity</span>
+      <span class="btn-icon"><i class="fa-solid fa-heart-pulse" style="color:#ef4444"></i></span><span class="btn-label">Sort by Activity</span>
     </button>
     <button class="action-btn" id="sortTitleBtn">
-      <span class="btn-icon">🔤</span><span class="btn-label">Sort by Title</span>
+      <span class="btn-icon"><i class="fa-solid fa-signature" style="color:#16a34a"></i></span><span class="btn-label">Sort by Title</span>
     </button>
     <button class="action-btn" id="reverseBtn">
-      <span class="btn-icon">🔃</span><span class="btn-label">Reverse Sort</span>
+      <span class="btn-icon"><i class="fa-solid fa-arrows-up-down" style="color:#2563eb"></i></span><span class="btn-label">Reverse Sort</span>
     </button>
     <button class="action-btn" id="declutterBtn">
-      <span class="btn-icon">🧹</span><span class="btn-label">Declutter</span>
+      <span class="btn-icon"><i class="fa-solid fa-hand-sparkles" style="color:#ec4899"></i></span><span class="btn-label">Declutter</span>
     </button>
   </div>
 

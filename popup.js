@@ -11,17 +11,21 @@ document.addEventListener('DOMContentLoaded', function () {
   const flaggedItems    = document.getElementById('flaggedItems');
   const closeAllBtn     = document.getElementById('closeAllBtn');
 
-  // Restore reversed state
-  let reversed = false;
-  chrome.storage.local.get('sortReversed', result => {
-    reversed = !!result.sortReversed;
-    reverseBtn.classList.toggle('active', reversed);
-  });
-
-  reverseBtn.addEventListener('click', () => {
-    reversed = !reversed;
-    reverseBtn.classList.toggle('active', reversed);
-    chrome.storage.local.set({ sortReversed: reversed });
+  reverseBtn.addEventListener('click', async () => {
+    reverseBtn.disabled = true;
+    showStatus('<span class="spinner"></span>Reversing…', 'info');
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'reverseTabs' });
+      if (response.success) {
+        showStatus(`Reversed ${response.result.reversed} tabs`, 'success');
+      } else {
+        showStatus(`Error: ${response.error}`, 'error');
+      }
+    } catch {
+      showStatus('Failed to reverse tabs', 'error');
+    } finally {
+      reverseBtn.disabled = false;
+    }
   });
 
   optionsBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
@@ -32,7 +36,10 @@ document.addEventListener('DOMContentLoaded', function () {
   sortTitleBtn.addEventListener('click',    () => doSort('title'));
 
   async function doSort(sortBy) {
-    const direction = reversed ? 'asc' : 'desc';
+    // Activity default: newest first (desc). Title default: A→Z (asc). Reverse flips each.
+    const direction = sortBy === 'title'
+      ? (reversed ? 'desc' : 'asc')
+      : (reversed ? 'asc'  : 'desc');
     const btn = sortBy === 'activity' ? sortActivityBtn : sortTitleBtn;
     btn.disabled = true;
     showStatus('<span class="spinner"></span>Sorting…', 'info');
