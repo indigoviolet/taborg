@@ -6,7 +6,11 @@
   "permissions": [
     "tabs",
     "tabGroups",
-    "storage"
+    "storage",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "https://api.anthropic.com/*"
   ],
   "action": {
     "default_popup": "popup.html",

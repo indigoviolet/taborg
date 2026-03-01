@@ -1,120 +1,162 @@
 // Popup script for Tab Organizer extension
 
-document.addEventListener('DOMContentLoaded', function() {
-  const organizeBtn = document.getElementById('organizeBtn');
-  const settingsBtn = document.getElementById('settingsBtn');
-  const loading = document.getElementById('loading');
-  const status = document.getElementById('status');
-  const configStatus = document.getElementById('configStatus');
-  
-  // Load and check configuration
-  checkConfiguration();
-  
-  // Event listeners
-  organizeBtn.addEventListener('click', handleOrganize);
-  settingsBtn.addEventListener('click', openOptions);
+document.addEventListener('DOMContentLoaded', function () {
+  const sortActivityBtn = document.getElementById('sortActivityBtn');
+  const sortTitleBtn    = document.getElementById('sortTitleBtn');
+  const reverseBtn      = document.getElementById('reverseBtn');
+  const declutterBtn    = document.getElementById('declutterBtn');
+  const optionsBtn      = document.getElementById('optionsBtn');
+  const statusMsg       = document.getElementById('statusMsg');
+  const flaggedList     = document.getElementById('flaggedList');
+  const flaggedItems    = document.getElementById('flaggedItems');
+  const closeAllBtn     = document.getElementById('closeAllBtn');
 
-  async function checkConfiguration() {
-    try {
-      const result = await chrome.storage.local.get(['provider', 'model', 'apiToken', 'promptText']);
-      
-      if (result.model && result.apiToken && result.promptText) {
-        const provider = result.provider || 'anthropic';
-        let providerName = 'Anthropic';
-        if (provider === 'openai') {
-          providerName = 'OpenAI';
-        } else if (provider === 'gemini') {
-          providerName = 'Google';
-        }
-        configStatus.innerHTML = `✅ Configured with ${providerName} ${result.model}`;
-        configStatus.style.backgroundColor = '#d4edda';
-        configStatus.style.color = '#155724';
-        organizeBtn.disabled = false;
-      } else {
-        configStatus.innerHTML = '⚠️ Please configure API settings first';
-        configStatus.style.backgroundColor = '#fff3cd';
-        configStatus.style.color = '#856404';
-        organizeBtn.disabled = true;
-      }
-    } catch (error) {
-      console.error('Error loading configuration:', error);
-      configStatus.innerHTML = '❌ Configuration error';
-      configStatus.style.backgroundColor = '#f8d7da';
-      configStatus.style.color = '#721c24';
-      organizeBtn.disabled = true;
-    }
-  }
+  // Restore reversed state
+  let reversed = false;
+  chrome.storage.local.get('sortReversed', result => {
+    reversed = !!result.sortReversed;
+    reverseBtn.classList.toggle('active', reversed);
+  });
 
-  async function handleOrganize() {
-    // Get current configuration
-    const result = await chrome.storage.local.get(['provider', 'model', 'apiToken', 'promptText', 'maxTokens']);
-    
-    const config = {
-      provider: result.provider || 'anthropic',
-      model: result.model,
-      apiToken: result.apiToken,
-      promptText: result.promptText,
-      maxTokens: result.maxTokens || 1024
-    };
+  reverseBtn.addEventListener('click', () => {
+    reversed = !reversed;
+    reverseBtn.classList.toggle('active', reversed);
+    chrome.storage.local.set({ sortReversed: reversed });
+  });
 
-    // Validate configuration
-    if (!config.model || !config.apiToken || !config.promptText) {
-      showStatus('Please configure your settings first', 'error');
-      return;
-    }
+  optionsBtn.addEventListener('click', () => chrome.runtime.openOptionsPage());
 
-    // Show loading state
-    organizeBtn.disabled = true;
-    loading.style.display = 'block';
-    status.innerHTML = '';
+  // === SORT ===
+
+  sortActivityBtn.addEventListener('click', () => doSort('activity'));
+  sortTitleBtn.addEventListener('click',    () => doSort('title'));
+
+  async function doSort(sortBy) {
+    const direction = reversed ? 'asc' : 'desc';
+    const btn = sortBy === 'activity' ? sortActivityBtn : sortTitleBtn;
+    btn.disabled = true;
+    showStatus('<span class="spinner"></span>Sorting…', 'info');
 
     try {
-      // Send message to background script
-      const response = await chrome.runtime.sendMessage({
-        action: 'organizeTabsWithAI',
-        config: config
-      });
-
+      const response = await chrome.runtime.sendMessage({ action: 'sortByActivity', sortBy, direction });
       if (response.success) {
-        showStatus(`Successfully organized tabs into ${response.result.grouping.groups.length} groups`, 'success');
-        
-        // Show group names after a delay
-        const groupNames = response.result.grouping.groups.map(g => g.name).join(', ');
-        setTimeout(() => {
-          showStatus(`Groups: ${groupNames}`, 'success');
-        }, 2000);
-        
-        // Close popup after success
-        setTimeout(() => {
-          window.close();
-        }, 4000);
+        const label = sortBy === 'activity'
+          ? (reversed ? 'least recent first' : 'most recent first')
+          : (reversed ? 'Z → A' : 'A → Z');
+        showStatus(`Sorted ${response.result.sorted} tabs — ${label}`, 'success');
       } else {
         showStatus(`Error: ${response.error}`, 'error');
       }
-    } catch (error) {
-      console.error('Error organizing tabs:', error);
-      showStatus('Failed to organize tabs. Check your configuration.', 'error');
+    } catch {
+      showStatus('Failed to sort tabs', 'error');
     } finally {
-      // Hide loading state
-      organizeBtn.disabled = false;
-      loading.style.display = 'none';
+      btn.disabled = false;
     }
   }
 
-  function openOptions() {
-    chrome.runtime.openOptionsPage();
+  // === DECLUTTER ===
+
+  declutterBtn.addEventListener('click', async () => {
+    declutterBtn.disabled = true;
+    flaggedList.style.display = 'none';
+    flaggedItems.innerHTML = '';
+    closeAllBtn.style.display = 'none';
+    showStatus('<span class="spinner"></span>Scanning…', 'info');
+
+    try {
+      const response = await chrome.runtime.sendMessage({ action: 'getDispensable' });
+      if (!response.success) throw new Error(response.error);
+
+      const flagged = response.flagged;
+      hideStatus();
+      flaggedList.style.display = 'block';
+
+      if (flagged.length === 0) {
+        flaggedItems.innerHTML = '<div class="empty-msg">No redundant tabs found</div>';
+      } else {
+        renderFlaggedItems(flagged);
+        closeAllBtn.style.display = 'block';
+        showStatus(`Found ${flagged.length} tab${flagged.length > 1 ? 's' : ''} to review`, 'info');
+      }
+    } catch {
+      showStatus('Failed to scan tabs', 'error');
+    } finally {
+      declutterBtn.disabled = false;
+    }
+  });
+
+  function renderFlaggedItems(flagged) {
+    flaggedItems.innerHTML = '';
+    for (const item of flagged) {
+      const el = document.createElement('div');
+      el.className = 'flagged-item';
+      el.dataset.tabId = item.tabId;
+      el.innerHTML = `
+        <div class="flagged-info">
+          <div class="flagged-title" title="${escapeHtml(item.title)}">${escapeHtml(truncate(item.title, 34))}</div>
+          <div class="flagged-reason">${escapeHtml(item.domain)} — ${escapeHtml(item.reason)}</div>
+        </div>
+        <button class="close-tab-btn" data-tab-id="${item.tabId}">✕</button>
+      `;
+      flaggedItems.appendChild(el);
+    }
+
+    flaggedItems.addEventListener('click', async e => {
+      const btn = e.target.closest('.close-tab-btn');
+      if (!btn) return;
+      const tabId = parseInt(btn.dataset.tabId);
+      btn.disabled = true;
+      try {
+        await chrome.runtime.sendMessage({ action: 'closeTabs', tabIds: [tabId] });
+        btn.closest('.flagged-item').remove();
+        updateCloseAllVisibility();
+      } catch {
+        btn.disabled = false;
+      }
+    });
   }
 
-  function showStatus(message, type) {
-    status.innerHTML = message;
-    status.className = `status ${type}`;
-    
-    // Auto-hide messages
-    if (type === 'success') {
-      setTimeout(() => {
-        status.innerHTML = '';
-        status.className = '';
-      }, 5000);
+  closeAllBtn.addEventListener('click', async () => {
+    const rows = flaggedItems.querySelectorAll('.flagged-item');
+    const tabIds = Array.from(rows).map(r => parseInt(r.dataset.tabId)).filter(Boolean);
+    if (!tabIds.length) return;
+    closeAllBtn.disabled = true;
+    try {
+      await chrome.runtime.sendMessage({ action: 'closeTabs', tabIds });
+      flaggedItems.innerHTML = '<div class="empty-msg">All flagged tabs closed</div>';
+      closeAllBtn.style.display = 'none';
+      hideStatus();
+    } catch {
+      closeAllBtn.disabled = false;
     }
+  });
+
+  function updateCloseAllVisibility() {
+    if (!flaggedItems.querySelectorAll('.flagged-item').length) {
+      flaggedItems.innerHTML = '<div class="empty-msg">All flagged tabs closed</div>';
+      closeAllBtn.style.display = 'none';
+    }
+  }
+
+  // === HELPERS ===
+
+  function showStatus(html, type) {
+    statusMsg.innerHTML = html;
+    statusMsg.className = `status-msg ${type}`;
+    statusMsg.style.display = 'block';
+  }
+
+  function hideStatus() {
+    statusMsg.style.display = 'none';
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function truncate(str, max) {
+    if (!str) return '';
+    return str.length > max ? str.slice(0, max) + '…' : str;
   }
 });
